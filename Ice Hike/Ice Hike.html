@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Ледяной поход</title>
+		<style>
+			#canvas2 {
+				position: fixed;
+				bottom: 0;
+  				left: 8px;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="canvas" width="1540" height="1443"></canvas><br>
+		<canvas id="canvas2" width="1366" height ="150"></canvas>
+		<script src='https://code.jquery.com/jquery-2.1.0.js'></script>
+		<script>
+
+			var whiteArmyChecked = [];
+
+			var canvas = document.getElementById("canvas");
+			var ctx = canvas.getContext("2d");
+
+			var canvas2 = document.getElementById("canvas2");
+			var ctx2 = canvas2.getContext("2d");
+
+			ctx.mozImageSmoothingEnabled = false;
+			ctx.webkitImageSmoothingEnabled = false;
+			ctx.msImageSmoothingEnabled = false;
+			ctx.imageSmoothingEnabled = false;
+
+			ctx2.mozImageSmoothingEnabled = false;
+			ctx2.webkitImageSmoothingEnabled = false;
+			ctx2.msImageSmoothingEnabled = false;
+			ctx2.imageSmoothingEnabled = false;
+
+			canvas.width = canvas.clientWidth;
+			canvas.height = canvas.clientHeight;
+
+			var img = new Image();
+			img.src = "Карта 3-2.bmp";
+
+			width = canvas.width;
+			height = canvas.height;	
+
+			var Squad = function(x, y, name, type, size, side, number, psy){
+				this.x = x;
+				this.y = y;
+				this.name = name;
+				this.type = type;
+				this.size = size;
+				this.side = side; 
+                this.number = number;
+                this.psy = psy;
+
+				if (this.size === "division") {
+					this.width = 27;
+					this.height = 13;
+                } else if (this.size === "brigade") {
+					this.width = 24;
+					this.height = 12;
+				} else if (this.size === "regiment") {
+					this.width = 21;
+					this.height = 10;
+				} else if (this.size === "battalion") {
+					this.width = 18;
+					this.height = 8;
+				} else if (this.size === "company") {
+					this.width = 15;
+					this.height = 7;
+				}
+
+				this.centerX = this.x + Math.round(this.width/2);
+				this.centerY = this.y + Math.round(this.height/2);
+			};
+
+			Squad.prototype.drawIcon = function(flag) {
+				console.log(flag);
+				if (this.side === "white"){
+					if (this.type === "infantry"){
+						ctx.strokeStyle = flag;
+						ctx.lineWidth = 1;
+						ctx.beginPath();
+						ctx.moveTo(this.x, this.y);
+						ctx.lineTo(this.x, this.y+this.height);
+						ctx.lineTo(this.x+this.width, this.y+this.height);
+						ctx.lineTo(this.x+this.width, this.y);
+						ctx.lineTo(this.x, this.y);
+						ctx.lineTo(this.x+this.width, this.y+this.height);
+						ctx.moveTo(this.x+this.width, this.y);
+						ctx.lineTo(this.x, this.y+this.height);
+						ctx.stroke();
+					};
+				};
+			};
+
+			drawCard = function() {
+				sWidth = 5;
+				constWidth = 140;
+				for (var i = 0; i < whiteArmy.length; i++){
+					ctx2.lineWidth = 1;
+					ctx2.fillStyle = "white";
+					ctx2.fillRect(sWidth, 5, constWidth, 140);
+					ctx2.fillRect(sWidth, 5, constWidth, 25);
+					ctx2.strokeRect(sWidth, 5, constWidth, 140);
+					ctx2.strokeRect(sWidth, 5, constWidth, 25);
+					
+					ctx2.textAlign = "left";
+
+					ctx2.font = "10px Tahoma";
+					ctx2.strokeText(whiteArmy[i].name, sWidth + 2, 20);
+
+					ctx2.strokeText("Σ: ", sWidth + 5, 45);
+					ctx2.strokeText("Ψ: ", sWidth + 105, 45);
+
+					ctx2.strokeText(whiteArmy[i].number, sWidth + 17, 45);
+					ctx2.strokeText(whiteArmy[i].psy, sWidth + 120, 45);
+
+
+					sWidth = sWidth + 150;
+
+				}
+
+			}
+
+			gcd = function(number1, number2){
+    			if(number2 === 0){
+        			return number1;
+    			}
+    			else {
+        			return gcd(number2, number1%number2);
+    			}
+			};
+
+			Squad.prototype.move = function(sq, targetX, targetY) {
+
+				var downImg = function() {
+					img.onload = function() {
+  						ctx.drawImage(img, 0.5, 0.5);
+  						for (var i = 0; i < whiteArmy.length; i++){
+  							whiteArmy[i].drawIcon();
+  						}	
+  					}
+  				};
+
+				var catX = targetX - sq.centerX;
+				var catY = targetY - sq.centerY;
+
+				var commonDivisor = gcd(catX, catY);
+				if (commonDivisor === 1 || commonDivisor === -1){
+					if (Math.abs(catX) > Math.abs(catY)){
+						catX = Math.round(catX/Math.abs(catY));
+						catY = 1;
+					} else if (Math.abs(catY) > Math.abs(catX)){
+						catY = Math.round(catY/Math.abs(catX));
+						catX = 1;
+					}
+				} else {
+					catX = catX/Math.abs(commonDivisor);
+					catY = catY/Math.abs(commonDivisor);
+				};
+
+				var numX = 0;
+				var numY = 0;
+
+				var numXX = 0;
+				var numYY = 0;
+
+				var x = 0;
+				var y = 0;
+
+				var flagX = true;
+
+				if (targetX - sq.centerX < 0){
+					x = -1;
+				} else {
+					x = 1;
+				};
+
+				if (targetY - sq.centerY < 0){
+					y = -1;
+				} else {
+					y = 1;
+				};
+
+				var dvij = setInterval(function(){
+					console.log('zdes', 'x:', x, 'y:', y);
+					sq.centerX = sq.x + Math.round(sq.width/2);
+					sq.centerY = sq.y + Math.round(sq.height/2);
+
+					if (sq.centerX === targetX && sq.centerY === targetY){
+						clearInterval(dvij);
+					} 
+
+					if ((numX < Math.abs(catX) && flagX === true && sq.centerX != targetX) || (sq.centerX != targetX && sq.centerY === targetY)) {
+						console.log(sq.centerX, sq.centerY);
+						sq.x = sq.x + x;
+						numXX = numXX + 1;
+						numX = numXX;
+						ctx.clearRect(0, 0, width, height);
+						ctx.drawImage(img, 0.5, 0.5);
+						for (var i = 0; i < whiteArmy.length; i++){
+							if (whiteArmy[i] === sq){
+								whiteArmy[i].drawIcon('yellow');
+							} else{
+								whiteArmy[i].drawIcon('blue');
+							}
+						}
+						console.log('sq.x ', sq.x, 'numX ', numX, 'catX ', catX);
+
+						if (numX === Math.abs(catX) || sq.centerX === targetX) {
+							console.log('x vse');
+							flagX = false;
+							numYY = 0;
+							numY = numYY;
+						}
+					} 
+
+					if ((numY < Math.abs(catY) && flagX === false && sq.centerY != targetY) || (sq.centerX === targetX && sq.centerY != targetY)){
+						console.log(sq.centerX, sq.centerY);
+						sq.y = sq.y + y;
+						numYY = numYY + 1;
+						numY = numYY;
+						ctx.clearRect(0, 0, width, height);
+						ctx.drawImage(img, 0.5, 0.5);
+						for (var i = 0; i < whiteArmy.length; i++){
+							if (whiteArmy[i] === sq){
+								whiteArmy[i].drawIcon('yellow');
+							} else{
+								whiteArmy[i].drawIcon('blue');
+							}
+						}
+						console.log('sq.y ', sq.y, 'numY ', numY, 'catY ', catY);
+
+						if (numY === Math.abs(catY) || sq.centerY === targetY) {
+							flagX = true;
+							numXX = 0;
+							numX = numXX;
+						}
+					}
+				}, 1000);
+			};
+			
+
+			$("#canvas").click(function(event) {
+
+				ctx.clearRect(0, 0, width, height);
+				ctx.drawImage(img, 0.5, 0.5);
+
+				for (var i = 0; i < whiteArmy.length; i++) {					
+
+					if (((event.offsetX >= whiteArmy[i].x) && (event.offsetX <= (whiteArmy[i].x + whiteArmy[i].width))) && ((event.offsetY >= whiteArmy[i].y) && (event.offsetY <= (whiteArmy[i].y + whiteArmy[i].height)))) {
+
+						whiteArmyChecked = whiteArmy[i];
+
+						whiteArmyChecked.drawIcon('yellow');
+
+					} else {
+						whiteArmy[i].drawIcon('blue');
+					}
+				}
+			});
+
+			$("#canvas").mousedown(function(event) {
+				if ((event.button == 2) && (whiteArmyChecked != [])) {
+					console.log(event.offsetX, event.offsetY);
+					var sq = whiteArmyChecked;
+					var targetX = event.offsetX;
+					var targetY = event.offsetY;
+					sq.move(sq, targetX, targetY);
+				}
+			});
+
+			$("#canvas2").click(function(event) {
+				var sWidth = 5;
+				var constWidth = 140;
+				var flag = -1;
+				for (var i = 0; i < whiteArmy.length; i++) {
+					ctx2.lineWidth = 3;
+					ctx2.strokeStyle = "#77DD77";
+					ctx2.strokeRect(sWidth-2, 3, constWidth+4, 144);
+					if ((event.offsetX >= sWidth && event.offsetX <= sWidth+constWidth) && (event.offsetY >= 5 && event.offsetY <= 145)){
+						ctx2.lineWidth = 3;
+						ctx2.strokeStyle = "yellow";
+						ctx2.strokeRect(sWidth-2, 3, constWidth+4, 144);
+						whiteArmyChecked = whiteArmy[i];
+						flag = i;
+					}
+					sWidth = sWidth + 150;
+				}
+
+				ctx.clearRect(0, 0, width, height);
+				ctx.drawImage(img, 0.5, 0.5);
+
+				for (var i = 0; i < whiteArmy.length; i++){
+					if (i === flag){
+						whiteArmy[i].drawIcon('yellow');
+					} else {
+						whiteArmy[i].drawIcon('blue');
+					}
+				}
+
+
+			});
+
+			var downImg = function() {
+				img.onload = function() {
+  					ctx.drawImage(img, 0.5, 0.5);
+  					for (var i = 0; i < whiteArmy.length; i++){
+  						whiteArmy[i].drawIcon('blue');
+  					}	
+  				}
+  			};
+
+
+			var KUP = new Squad(500, 100, "Корниловский ударный полк", "infantry", "regiment","white", 1200, 90);
+			var GP = new Squad(490, 126, "Георгиевский полк", "infantry", "regiment", "white", 850, 85);
+			var UB = new Squad(600, 130, "Юнкерский батальон", "infantry", "battalion", "white", 170, 85);
+
+			var whiteArmy = [KUP, GP, UB];
+
+  			ctx.translate(-0.5, -0.5);
+  			ctx2.translate(-0.5, -0.5);
+
+  			downImg();
+
+  			ctx2.fillStyle = '#77DD77';
+  			ctx2.fillRect(0.5, 0.5, 2366, 150);
+  			ctx2.strokeRect(0.5, 0.5, 2366, 150);
+
+  			drawCard();
+
+		</script>
+	</body>
+</html>
